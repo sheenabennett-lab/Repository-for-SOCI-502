@@ -1,0 +1,115 @@
+
+---
+title: "Running Performance Over Time"
+subtitle: "A Simulation Using Strava Data"
+author: "Sheena Bennett"
+date: today
+format:
+  pdf:
+    geometry:
+      - margin=0.7in
+    fig-width: 5
+    fig-height: 2.5
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+## Research Question
+
+How has my average running pace changed between 2023 and 2026, and does this change differ between short-distance and long-distance runs?
+
+## Data Source
+
+The intended dataset is my personal Strava activity history, obtained through Strava's account data export feature and downloaded as 'activities.csv'. Strava allows account holders to download their recorded activity history through their account settings. It contains activity dates, distances, and moving times. Pace is calculated in minutes per mile.
+
+Each observation represents one running activity. I will compare runs from 2023 and 2026, categorizing short runs as 1–5 miles and long runs as 6–13 miles. Runs outside these intervals will be excluded.
+
+## Simulating the Data
+
+The following code simulates 20 short and 20 long runs in each year. I am assuming that pace generally becomes slower as distance increases. These are simulated values, not actual Strava results.
+```{r}
+
+#### Simulate ####
+
+library(tidyverse)
+
+set.seed(853)
+
+simulated_running_data <-
+  tibble(
+    year = rep(
+      x = c(2023, 2026),
+      each = 40
+    ),
+
+    run_type = rep(
+      x = c("Short", "Long"),
+      each = 20,
+      times = 2
+    ),
+
+    distance_miles = c(
+      runif(n = 20, min = 1, max = 5),
+      runif(n = 20, min = 6, max = 13),
+      runif(n = 20, min = 1, max = 5),
+      runif(n = 20, min = 6, max = 13)
+    )
+  ) %>%
+  mutate(
+    pace = if_else(
+      year == 2023,
+      10.2 + 0.15 * distance_miles,
+      9.2 + 0.10 * distance_miles
+    ) + rnorm(n = 80, mean = 0, sd = 0.5)
+  )
+
+head(simulated_running_data)
+
+```
+```{r}
+
+ggplot(
+  simulated_running_data,
+  aes(
+    x = distance_miles,
+    y = pace,
+    color = factor(year)
+  )
+) +
+  geom_point(alpha = 0.5, size = 2) +
+  geom_smooth(
+    method = "lm",
+    se = FALSE
+  ) +
+  scale_y_reverse() +
+  scale_color_manual(
+    values = c(
+      "2023" = "#6C63FF",
+      "2026" = "#E76F51"
+    )
+  ) +
+  labs(
+    title = "Running Pace by Distance",
+    subtitle = "Simulated Data: 2023 vs. 2026",
+    x = "Distance (miles)",
+    y = "Pace (minutes per mile)",
+    color = "Year"
+  ) +
+  theme_minimal()
+
+```
+
+## Expected Pattern
+
+As the simulation suggests, I expect my average running pace to be faster in 2026 than in 2023 across both short-distance and long-distance runs. This would be reflected by lower minutes-per-mile values for 2026 at comparable running distances. In the scatterplot, this would appear as the 2026 regression line having lower pace values than the 2023 line, with the gap between the lines increasing as distance increases.
+
+
+## Potential Sociological Extensions/Unmeasured Variables
+
+## Sociological Extensions
+
+Although this analysis examines my own individual running performance, broader social and environmental factors may also influence my running habits. My recent move to Vancouver introduced new running environments such as Stanley Park and Pacific Spirit Regional Park. Differences in climate, green space, and personal circumstances may contribute to changes in my running behaviour, although these factors are not directly measured in my dataset. A larger sociological study could combine voluntarily donated Strava data with neighbourhood-level data to investigate how access to safe, green, and accessible public spaces shapes opportunities for recreational physical activity across socioeconomic groups.
+
+I could also potentially investigate how employment conditions, caregiving responsibilities, and leisure-time affect running habits. For instance, participants training for the same half-marathon could voluntarily donate their Strava data and complete surveys about their occupations, daily schedules, family responsibilities, and available leisure time. Comparing their training frequency, weekly mileage, and performance changes could help identify how social circumstances relate to opportunities for recreational running. This study would also consider how socioeconomic inequalities and access to recreational infrastructure may influence individuals' ability to train consistently.

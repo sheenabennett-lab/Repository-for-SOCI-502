@@ -1,0 +1,137 @@
+---
+title: "week 9 practice"
+author: "Sheena Bennett"
+format: pdf
+execute:
+  echo: true
+  warning: false
+---
+```{r}
+library(janitor)
+library(lubridate)
+library(modelsummary)
+library(opendatatoronto)
+library(pdftools)
+library(pointblank)
+library(readxl)
+library(scales)
+library(stringi)
+library(testthat)
+library(tidyverse)
+library(tinytable)
+library(validate)
+library(here)
+```
+```{r}
+strava <- read_csv(
+  here("Strava Analysis", "data", "activities.csv"),
+  show_col_types = FALSE
+)
+```
+
+
+```{r}
+head(strava)
+```
+```{r}
+tail(strava)
+```
+```{r}
+glimpse(strava)
+```
+```{r}
+slice(strava)
+```
+```{r}
+summary(strava)
+```
+```{r}
+strava_runs <- strava |>
+  clean_names() |>
+  filter(activity_type == "Run") |>
+  mutate(
+    distance_km = distance_18 / 1000,
+    moving_time_min = moving_time / 60
+  )
+```
+```{r}
+strava_runs |>
+  ggplot(aes(x = distance_km, y = moving_time_min)) +
+  geom_point()
+```
+## lets look at distance vs. average heartrate!
+```{r}
+strava_runs |>
+  ggplot(aes(x = distance_km, y = average_heart_rate)) +
+  geom_point(alpha = 0.6, na.rm = TRUE) +
+  geom_smooth(method = "lm", se = FALSE, na.rm = TRUE) +
+  theme_minimal() +
+  labs(
+    title = "Running Distance and Average Heart Rate",
+    x = "Distance (km)",
+    y = "Average Heart Rate (BPM)"
+  )
+```
+### one thing i need to consider here is that my watch often measures my cadence instead of my heart rate, so I do not think this is an accurate representation of the relationship between distance/heartrate and need to be cognizant of this in future analysis with this specific metric. 
+
+## lets look at running pace vs. distance.
+
+```{r}
+strava_runs <- strava_runs |>
+  mutate(
+    pace_min_km = if_else(
+      distance_km > 0,
+      moving_time_min / distance_km,
+      NA_real_
+    )
+  )
+```
+```{r}
+strava_runs |>
+  ggplot(aes(x = distance_km, y = pace_min_km)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_minimal() +
+  labs(
+    title = "Relationship Between Running Distance and Pace",
+    x = "Distance (km)",
+    y = "Average Pace (min/km)"
+  )
+```
+### It looks like my running pace is relatively consistent. It looks like there are 3 very slow activities and one very very fast activity. I believe the 3 very slow ones are warm ups that were counted as singular activities. I cannot make out what the very fast activity is though. This may be a recording error.
+
+```{r}
+strava_runs |>
+  filter(
+    pace_min_km > 10 |
+    pace_min_km < 4
+  ) |>
+  select(activity_date, activity_name,
+         distance_km, moving_time_min, pace_min_km)
+```
+```{r}
+strava_runs |>
+  ggplot(aes(x = distance_km, y = pace_min_km)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_minimal()
+```
+```{r}
+strava_runs |>
+  filter(
+    pace_min_km >= 4,
+    pace_min_km <= 10
+  ) |>
+  ggplot(aes(x = distance_km, y = pace_min_km)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_minimal() +
+  labs(
+    title = "Running Distance and Pace: Excluding Extreme Values",
+    x = "Distance (km)",
+    y = "Average Pace (min/km)"
+  )
+```
+
+
+
